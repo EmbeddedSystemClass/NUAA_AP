@@ -9,69 +9,61 @@ static HAL_StatusTypeDef txDataWrite(CAN_HandleTypeDef *hcan, uint32_t canId, ui
 /*接收 解析*/
 void canSbusDataParse(CanRxMsgTypeDef rx)
 {
-	SEGGER_RTT_printf(0,"flag %d\r\n", rx.StdId & canMegFilter);
-				SEGGER_RTT_printf(0,"flag %d\r\n", rx.StdId & canIxdFilter);
-        switch(rx.StdId & canIxdFilter)
-        {
-            case canMegIxd0 :
-                for (uint8_t i = 0; i < 4; i++)
-                {
-                    sBusData.channel[i] = (uint32_t)rx.Data[2*i] << 8 | rx.Data[2*i + 1];   
-										SEGGER_RTT_printf(0,"rx.Data %d\r\n", rx.Data[i]);
-										SEGGER_RTT_printf(0,"channel %d\r\n", sBusData.channel[i]);
-                }
-                sBusData.update = 1;
-                break;
-            case canMegIxd1 :
-                for (uint8_t i = 0; i < 4; i++)
-                {
-                    sBusData.channel[i + 4] = (uint32_t)rx.Data[2*i] << 8 | rx.Data[2*i + 1];
-                }
-                sBusData.update = 1;
-                break;
-            default :
-                sBusData.update = 0;
-                break;
-       
+	//SEGGER_RTT_printf(0,"flag %d\r\n", rx.StdId & canMegFilter);
+    //SEGGER_RTT_printf(0,"flag %d\r\n", rx.StdId & canIxdFilter);
+    switch(rx.StdId & canIxdFilter)
+    {
+        case canMegIxd0 :
+            for (uint8_t i = 0; i < 4; i++)
+            {
+                sBusData.channel[i] = (uint32_t)rx.Data[2*i] << 8 | rx.Data[2*i + 1];   
+                //SEGGER_RTT_printf(0,"rx.Data %d\r\n", rx.Data[i]);
+                //SEGGER_RTT_printf(0,"channel %d\r\n", sBusData.channel[i]);
+            }
+            sBusData.update = 1;
+            break;
+        case canMegIxd1 :
+            for (uint8_t i = 0; i < 4; i++)
+            {
+                sBusData.channel[i + 4] = (uint32_t)rx.Data[2*i] << 8 | rx.Data[2*i + 1];
+            }
+            sBusData.update = 1;
+            break;
+        default :
+            sBusData.update = 0;
+            break;
     }
 }
 
 void canAirSpeedParse(CanRxMsgTypeDef rx)
 {
-    if(rx.StdId & canMegFilter == canAirspeed)
+    switch(rx.StdId & canIxdFilter)
     {
-        switch(rx.StdId & canIxdFilter)
-        {
-            case canMegIxd0 :
-                memcpy(&airSpeed.speed,&rx.Data[0],sizeof(float));
-                memcpy(&airSpeed.pressureDiff,&rx.Data[4],sizeof(float));
-                airSpeed.update = 1;
-                break;
-            case canMegIxd1 :
-                memcpy(&airSpeed.rtSpeed,&rx.Data[0],sizeof(float));
-                airSpeed.update = 1;
-                break;
-            default :
-                airSpeed.update = 0;
-                break;
-        }
+        case canMegIxd0 :
+            memcpy(&airSpeed.speed,&rx.Data[0],sizeof(float));
+            memcpy(&airSpeed.pressureDiff,&rx.Data[4],sizeof(float));
+            airSpeed.update = 1;
+            break;
+        case canMegIxd1 :
+            memcpy(&airSpeed.rtSpeed,&rx.Data[0],sizeof(float));
+            airSpeed.update = 1;
+            break;
+        default :
+            airSpeed.update = 0;
+            break;
     }
-    else
-    {
-        airSpeed.update = 0;
-    }
+ 
 }
 
 static HAL_StatusTypeDef txDataWrite(CAN_HandleTypeDef *hcan, uint32_t canId, uint8_t len,uint8_t *data)
 {
 	HAL_StatusTypeDef result = HAL_OK;
-
-  hcan->pTxMsg->StdId = canId;   //标准型
+    hcan->pTxMsg->StdId = canId;   //标准型
 	hcan->pTxMsg->IDE   = CAN_ID_STD;  
 	hcan->pTxMsg->RTR   = CAN_RTR_DATA; //数据帧
-	SEGGER_RTT_printf(0,"hcan->pTxMsg->StdId = %d\r\n",hcan->pTxMsg->StdId);
-	SEGGER_RTT_printf(0,"hcan->pTxMsg->IDE = %d\r\n",hcan->pTxMsg->IDE);
-	SEGGER_RTT_printf(0,"hcan->pTxMsg->RTR = %d\r\n",hcan->pTxMsg->RTR);
+	//SEGGER_RTT_printf(0,"hcan->pTxMsg->StdId = %d\r\n",hcan->pTxMsg->StdId);
+	//SEGGER_RTT_printf(0,"hcan->pTxMsg->IDE = %d\r\n",hcan->pTxMsg->IDE);
+	//SEGGER_RTT_printf(0,"hcan->pTxMsg->RTR = %d\r\n",hcan->pTxMsg->RTR);
 	if( len > 8 )
 	{
 		hcan->pTxMsg->DLC = 8; 
@@ -87,7 +79,7 @@ static HAL_StatusTypeDef txDataWrite(CAN_HandleTypeDef *hcan, uint32_t canId, ui
 	}
 	
     result = HAL_CAN_Transmit(hcan,100);
-		SEGGER_RTT_printf(0,"TranResult = %d\r\n",result);
+    //SEGGER_RTT_printf(0,"TranResult = %d\r\n",result);
 		//result = HAL_CAN_Transmit_IT(hcan);
     if( result != HAL_OK )
     {
@@ -102,7 +94,7 @@ HAL_StatusTypeDef txDataSend(CAN_HandleTypeDef *hcan, uint32_t message, uint8_t 
     uint8_t lenTemp = len;
     uint8_t flag = 0;
     uint32_t canID;
-		HAL_StatusTypeDef flagD = HAL_OK;
+    HAL_StatusTypeDef flagD = HAL_OK;
     while(lenTemp > 0)
     {
         len = (lenTemp > 8) ? 8 : lenTemp;
@@ -122,7 +114,7 @@ HAL_StatusTypeDef txDataSend(CAN_HandleTypeDef *hcan, uint32_t message, uint8_t 
             return HAL_ERROR;
         }
     }
-		SEGGER_RTT_printf(0,"InterStep");
+    //SEGGER_RTT_printf(0,"InterStep");
     return HAL_OK;
 }
 
