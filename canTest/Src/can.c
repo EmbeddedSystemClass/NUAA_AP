@@ -58,11 +58,7 @@ CAN_HandleTypeDef hcan1;
 /* CAN1 init function */
 void MX_CAN1_Init(void)
 {
-  static CanTxMsgTypeDef TxMessage;
-  static CanRxMsgTypeDef RxMessage;	
-	hcan1.pTxMsg = &TxMessage;
-  hcan1.pRxMsg = &RxMessage;  
-	
+
   hcan1.Instance = CAN1;
   hcan1.Init.Prescaler = 6;
   hcan1.Init.Mode = CAN_MODE_LOOPBACK ;
@@ -144,6 +140,11 @@ void HAL_CAN_MspDeInit(CAN_HandleTypeDef* canHandle)
 /* USER CODE BEGIN 1 */
 static void canFilterInit()
 {
+  static CanTxMsgTypeDef TxMessage;
+  static CanRxMsgTypeDef RxMessage;	
+	hcan1.pTxMsg = &TxMessage;
+  hcan1.pRxMsg = &RxMessage;  
+  
 	HAL_CAN1_ConfigFilter();
 	__HAL_CAN_ENABLE_IT(&hcan1, CAN_IT_FMP0);
 	SEGGER_RTT_printf(0,"CAN Initial Succeed \r\n");
